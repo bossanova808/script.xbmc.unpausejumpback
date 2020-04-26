@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.xbmc.unpausejumpback" name="Unpause Jumpback" version="2.3.4" provider-name="Memphiz,Lucleonhart,schumi2004,bossanova808">
+<addon id="script.xbmc.unpausejumpback" name="Unpause Jumpback" version="2.4.0" provider-name="Memphiz,Lucleonhart,schumi2004,bossanova808,dkadioglu">
   <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="xbmc.python" version="3.0.0"/>
   </requires>
   <extension point="xbmc.service" library="default.py" start="login"></extension>
   <extension point="xbmc.addon.metadata">
