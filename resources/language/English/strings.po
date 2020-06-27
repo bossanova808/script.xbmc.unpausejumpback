@@ -1,4 +1,4 @@
-# XBMC Media Center language file
+# Kodi Media Center language file
 msgid ""
 msgstr ""
 "Project-Id-Version: XBMC-Addons\n"
@@ -14,21 +14,21 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 msgctxt "#32000"
-msgid "Jump back on unpause"
+msgid "Jump back on un-pause"
 msgstr ""
 
 msgctxt "#32001"
-msgid "Jump seconds"
+msgid "Jump back how many seconds?"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Minimum pause before jumpback"
+msgid "Minimum pause time before jumpback"
 msgstr ""
 
 #empty strings from id 32003 to 32009
 
 msgctxt "#32010"
-msgid "Jump back after fwd"
+msgid "Jump back after fast forward"
 msgstr ""
 
 msgctxt "#32011"
@@ -54,7 +54,7 @@ msgstr ""
 #empty strings from id 32016 to 32019
 
 msgctxt "#32020"
-msgid "Jump forward after rwd"
+msgid "Jump forward after rewind"
 msgstr ""
 
 msgctxt "#32021"
@@ -92,7 +92,7 @@ msgid "Exclude HTTP sources"
 msgstr ""
 
 msgctxt "#32033"
-msgid "Exclude path"
+msgid "Exclude Path"
 msgstr ""
 
 msgctxt "#32034"
@@ -102,5 +102,13 @@ msgstr ""
 #empty strings from id 32035 to 32039
 
 msgctxt "#32040"
-msgid "Jump after resume"
+msgid "Jump back on resume (on, default), or pause (off)"
+msgstr ""
+
+msgctxt "#32042"
+msgid "(For low power systems, jump back on pause may behave more smoothly)"
+msgstr ""
+
+msgctxt "#32043"
+msgid "Also jump back on playback started?"
 msgstr ""
