@@ -19,7 +19,7 @@
         Има и възможност за скок напред / назад след превъртане напред или назад за дефиниран период от време.
     </description>
     <platform>all</platform>
-    <license>GPL-2.0-only</license>
+    <license>GPL-3.0-only</license>
     <website>https://github.com/bossanova808/script.xbmc.unpausejumpback/</website>
     <source>https://github.com/bossanova808/script.xbmc.unpausejumpback/</source>
     <forum>http://forum.xbmc.org/showthread.php?tid=134837</forum>
