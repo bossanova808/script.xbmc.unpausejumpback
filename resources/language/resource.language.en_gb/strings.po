@@ -94,7 +94,7 @@ msgid "Folder's path (and subfolders)"
 msgstr ""
 
 msgctxt "#32040"
-msgid "Jump back on resume (on, default), or pause (off)"
+msgid "Actually do jump back at resume (on), or pause (off)"
 msgstr ""
 
 msgctxt "#32042"

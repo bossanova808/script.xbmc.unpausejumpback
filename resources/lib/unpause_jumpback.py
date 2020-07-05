@@ -23,13 +23,18 @@ global g_jumpBackSecsAfterResume
 global g_lastPlaybackSpeed
 global g_waitForJumpback
 
+global kodi_monitor
+global player
 
 def run(args):
     """
-    This is 'main'
+    This is 'main', sets up all the listening...
 
     @param args: sys.argv is passed in here
     """
+
+    global kodi_monitor
+    global player
 
     load_settings()
     kodi_monitor = MyMonitor()
@@ -162,8 +167,14 @@ class MyPlayer(xbmc.Player):
 
                 g_pausedTime = 0
 
+        # If we're not jumping back on resume, then we should cancel the alarm set if they manually resume playback
+        # before it goes off
+        else:
+            log('Cancelling alarm - playback either resumed or stopped by the user.')
+            xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
+
     # Alternatively, handle Jump Back on Pause
-    # (for low power systems, so it happens in the background during the pause - prevents janky-ness)
+    # (for low power systems, so it happens in the background during the pause - helps prevents janky-ness)
     def onPlayBackPaused(self):
 
         global g_jumpBackSecsAfterPause
@@ -211,7 +222,9 @@ class MyPlayer(xbmc.Player):
 
         if speed == 1:  # normal playback speed reached
             direction = 1
-            absLastSpeed = abs(g_lastPlaybackSpeed)
+            abs_last_speed = abs(g_lastPlaybackSpeed)
+            # default value, just in case
+            resume_time = self.getTime()
             if g_lastPlaybackSpeed < 0:
                 log('Resuming. Was rewound with speed X%d.' % (abs(g_lastPlaybackSpeed)))
             if g_lastPlaybackSpeed > 1:
@@ -219,39 +232,32 @@ class MyPlayer(xbmc.Player):
                 log('Resuming. Was forwarded with speed X%d.' % (abs(g_lastPlaybackSpeed)))
             # handle jump after fwd/rwd (jump back after fwd, jump forward after rwd)
             if direction == -1:  # fwd
-                if absLastSpeed == 2:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterFwdX2 * direction
-                elif absLastSpeed == 4:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterFwdX4 * direction
-                elif absLastSpeed == 8:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterFwdX8 * direction
-                elif absLastSpeed == 16:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterFwdX16 * direction
-                elif absLastSpeed == 32:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterFwdX32 * direction
+                if abs_last_speed == 2:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterFwdX2 * direction
+                elif abs_last_speed == 4:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterFwdX4 * direction
+                elif abs_last_speed == 8:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterFwdX8 * direction
+                elif abs_last_speed == 16:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterFwdX16 * direction
+                elif abs_last_speed == 32:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterFwdX32 * direction
             else:  # rwd
-                if absLastSpeed == 2:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterRwdX2 * direction
-                elif absLastSpeed == 4:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterRwdX4 * direction
-                elif absLastSpeed == 8:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterRwdX8 * direction
-                elif absLastSpeed == 16:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterRwdX16 * direction
-                elif absLastSpeed == 32:
-                    resumeTime = xbmc.Player().getTime() + g_jumpBackSecsAfterRwdX32 * direction
+                if abs_last_speed == 2:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterRwdX2 * direction
+                elif abs_last_speed == 4:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterRwdX4 * direction
+                elif abs_last_speed == 8:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterRwdX8 * direction
+                elif abs_last_speed == 16:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterRwdX16 * direction
+                elif abs_last_speed == 32:
+                    resume_time = self.getTime() + g_jumpBackSecsAfterRwdX32 * direction
 
-            if absLastSpeed != 1:  # we really fwd'ed or rwd'ed
-                self.seekTime(resumeTime)  # do the jump
+            if abs_last_speed != 1:  # we really fwd'ed or rwd'ed
+                self.seekTime(resume_time)  # do the jump
 
         g_lastPlaybackSpeed = speed
-
-    # def onPlayBackResumed(self):
-    #     log('Cancelling alarm - playback either resumed or stopped by the user')
-    #     xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
-
-    # We don't care if playback was resumed or stopped, we just want to know when we're no longer paused
-    # onPlayBackStopped = onPlayBackResumed
 
 
 class MyMonitor(xbmc.Monitor):
