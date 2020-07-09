@@ -24,6 +24,9 @@
     <source>https://github.com/bossanova808/script.xbmc.unpausejumpback/</source>
     <forum>http://forum.xbmc.org/showthread.php?tid=134837</forum>
     <email>bossonav808@gmail.com</email>
+    <news>v3.0.0
+        [new] Update for Kodi Matrix / Python 3, make unpause on resume vs. pause a choice, bugfixes and tidy up.
+    </news>
     <assets>
       <icon>icon.png</icon>
     </assets>
