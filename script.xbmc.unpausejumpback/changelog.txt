@@ -1,8 +1,3 @@
-3.0.0
-- Update for Matrix / Python3 (work borrowed from https://github.com/dkadioglu/script.xbmc.unpausejumpback)
-- Add setting for jump back occurring at time of un-pause vs. at time of pause
-- Bug fixes & tidy-ups
-
 2.3.3
 - fixed format of authors tag in addon.xml
 - removed the XBMC from the name
