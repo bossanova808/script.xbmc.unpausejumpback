@@ -102,5 +102,5 @@ msgid "(For low power systems, jump back on pause may behave more smoothly)"
 msgstr ""
 
 msgctxt "#32043"
-msgid "Also jump back on playback started?"
+msgid "Also jump back on playback started from resume point?"
 msgstr ""

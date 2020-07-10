@@ -3,7 +3,7 @@
 # Handy utility functions for Kodi Addons
 # By bossanova808
 # Free in all senses....
-# VERSION 0.1.1
+# VERSION 0.1.2
 # (Matrix on)
 
 import xbmc
@@ -43,17 +43,6 @@ def log(message, exception_instance=None, level=xbmc.LOGDEBUG):
         xbmc.log(message_with_exception, level)
 
 
-def log_notice(message, exception_instance=None):
-    """
-    Log a message at the LOGNOTICE level, i.e. even if Kodi debugging is not turned on. Use sparingly.
-
-    :param message: required, the message to log
-    :param exception_instance: optional, an instance of some Exception
-    """
-
-    log(message, exception_instance, level=xbmc.LOGNOTICE)
-
-
 def footprints(startup=True):
     """
     Log the startup of an addon, and key Kodi details that are helpful for debugging
@@ -61,11 +50,11 @@ def footprints(startup=True):
     :param startup: optional, default True.  If true, log the startup of an addon, otherwise log the exit.
     """
     if startup:
-        log_notice(f'Starting...')
-        log_notice(f'Kodi Version: {KODI_VERSION}')
-        log_notice(f'Addon arguments: {ADDON_ARGUMENTS}')
+        log('Starting...')
+        log(f'Kodi Version: {KODI_VERSION}')
+        log(f'Addon arguments: {ADDON_ARGUMENTS}')
     else:
-        log_notice(f'Exiting...')
+        log('Exiting...')
 
 
 def set_property(window, name, value=""):
