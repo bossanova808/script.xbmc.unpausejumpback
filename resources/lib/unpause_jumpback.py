@@ -216,7 +216,8 @@ class MyPlayer(xbmc.Player):
             direction = 1
             abs_last_speed = abs(self.last_playback_speed)
             # default value, just in case
-            resume_time = self.getTime()
+            if self.isPlayingVideo():
+                resume_time = self.getTime()
             if self.last_playback_speed < 0:
                 log('Resuming. Was rewound with speed X%d.' % (abs(self.last_playback_speed)))
             if self.last_playback_speed > 1:
