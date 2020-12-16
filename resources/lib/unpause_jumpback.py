@@ -194,7 +194,10 @@ class MyPlayer(xbmc.Player):
 
         # If the addon is set to do a jump back when playback is started from a resume point...
         if self.jump_back_on_playback_started:
-            current_time = self.getTime()
+            try:
+                current_time = self.getTime()
+            except:
+                current_time = 0
             log(f'onAVStarted at {current_time}')
 
             # check for exclusion
