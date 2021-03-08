@@ -196,8 +196,10 @@ class MyPlayer(xbmc.Player):
         if self.jump_back_on_playback_started:
             try:
                 current_time = self.getTime()
-            except:
-                current_time = 0
+            except RuntimeError as exc:
+                log('No file is playing, stopping UnpauseJumpBack')
+                xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
+                pass
             log(f'onAVStarted at {current_time}')
 
             # check for exclusion
@@ -221,9 +223,10 @@ class MyPlayer(xbmc.Player):
             # default value, just in case
             try:
                 resume_time = self.getTime()
-            except:
-                #catch unlucky timing when not playing media any longer
-                resume_time = 0
+            except RuntimeError as exc:
+                log('No file is playing, stopping UnpauseJumpBack')
+                xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
+                pass
             if self.last_playback_speed < 0:
                 log('Resuming. Was rewound with speed X%d.' % (abs(self.last_playback_speed)))
             if self.last_playback_speed > 1:

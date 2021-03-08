@@ -25,10 +25,10 @@
     <forum>https://forum.kodi.tv/showthread.php?tid=355778</forum>
     <email>bossonav808@gmail.com</email>
     <news>v3.0.2
-        - fix "XBMC is not playing any media file" when skipping beyond end of file
+        [fix] "XBMC is not playing any media file" errors
         v3.0.1
         [fix] minor bugfix for http/s sources (plugins)
-        - Update for changes to Kodi Matrix logging functions
+        [fix] Update for changes to Kodi Matrix logging functions
         v3.0.0
         [new] Update for Kodi Matrix / Python 3, make unpause on resume vs. pause a choice, bugfixes and tidy up.
     </news>
