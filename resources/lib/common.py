@@ -3,7 +3,7 @@
 # Handy utility functions for Kodi Addons
 # By bossanova808
 # Free in all senses....
-# VERSION 0.1.4 2020-10-18
+# VERSION 0.1.5 2021-03-08
 # (For Kodi Matrix & later)
 
 import xbmc
@@ -115,3 +115,20 @@ def get_setting_as_bool(setting):
     @return: setting value as boolen
     """
     return get_setting(setting).lower() == "true"
+
+
+def notify(message, notification_type=xbmcgui.NOTIFICATION_ERROR, duration=5000):
+    """
+    Send a notification to the user via the Kodi GUI
+
+    @param message: the message to send
+    @param notification_type: xbmcgui.NOTIFICATION_ERROR (default), xbmcgui.NOTIFICATION_WARNING, or xbmcgui.NOTIFICATION_INFO
+    @param duration: time to display notification in milliseconds, default 5000
+    @return: None
+    """
+    dialog = xbmcgui.Dialog()
+
+    dialog.notification(ADDON_NAME,
+                        message,
+                        notification_type,
+                        duration)
