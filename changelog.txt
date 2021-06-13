@@ -1,5 +1,9 @@
+3.0.2
+- fix "XBMC is not playing any media file" when skipping beyond end of file
+
 3.0.1
 - Minor bugfix with http/s sources (plugins)
+- Changes for Kodi Matrix logging (LOGNOTICE -> LOGINFO)
 
 3.0.0
 - Update for Matrix / Python3 (work borrowed from https://github.com/dkadioglu/script.xbmc.unpausejumpback)
