@@ -200,6 +200,7 @@ class MyPlayer(xbmc.Player):
                 log('No file is playing, stopping UnpauseJumpBack')
                 xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
                 pass
+
             log(f'onAVStarted at {current_time}')
 
             # check for exclusion
@@ -227,6 +228,7 @@ class MyPlayer(xbmc.Player):
                 log('No file is playing, stopping UnpauseJumpBack')
                 xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
                 pass
+                
             if self.last_playback_speed < 0:
                 log('Resuming. Was rewound with speed X%d.' % (abs(self.last_playback_speed)))
             if self.last_playback_speed > 1:
