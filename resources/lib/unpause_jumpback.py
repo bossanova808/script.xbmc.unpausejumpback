@@ -190,19 +190,28 @@ class MyPlayer(xbmc.Player):
 
     def onAVStarted(self):
 
+        Logger.info(f'onAVStarted.')
+
         # If the addon is set to do a jump back when playback is started from a resume point...
         if self.jump_back_on_playback_started:
+
             try:
                 current_time = self.getTime()
             except RuntimeError:
-                Logger.info('No file is playing, stopping UnpauseJumpBack')
+                Logger.info('No file is playing, could not getTime(), stopping UnpauseJumpBack')
                 xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
-                pass
+                return
 
-            Logger.info(f'onAVStarted at {current_time}')
+            Logger.info(f'Current playback time is {current_time}')
 
             # check for exclusion
-            _filename = self.getPlayingFile()
+            try:
+                _filename = self.getPlayingFile()
+            except RuntimeError:
+                Logger.info('No file is playing, could not getPlayingFile(), stopping UnpauseJumpBack')
+                xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
+                return
+
             if self.is_excluded(_filename):
                 Logger.info(f"Ignored because '{_filename}' is in exclusion settings.")
                 return
