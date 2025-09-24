@@ -1,10 +1,11 @@
 import xbmc
 import time
+from typing import Optional
 from bossanova808.logger import Logger
 from bossanova808.utilities import get_setting, get_setting_as_bool
 
-global player
-global kodi_monitor
+player: Optional['MyPlayer'] = None
+kodi_monitor: Optional['MyMonitor'] = None
 
 
 def run():
@@ -13,22 +14,23 @@ def run():
     global kodi_monitor
 
     Logger.start()
+    try:
+        # Set up our Kodi Monitor & Player...
+        kodi_monitor = MyMonitor()
+        player = MyPlayer()
 
-    # Set up our Kodi Monitor & Player...
-    kodi_monitor = MyMonitor()
-    player = MyPlayer()
-
-    # Run until abort requested
-    while not kodi_monitor.abortRequested():
-        if kodi_monitor.waitForAbort(1):
-            # Abort was requested while waiting. We should exit
-            Logger.stop()
-            break
+        # Run until abort requested
+        while not kodi_monitor.abortRequested():
+            if kodi_monitor.waitForAbort(1):
+                # Abort was requested while waiting. We should exit
+                break
+    finally:
+        Logger.stop()
 
 
 class MyPlayer(xbmc.Player):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         xbmc.Player.__init__(self)
         Logger.debug('MyPlayer - init')
 
@@ -199,7 +201,7 @@ class MyPlayer(xbmc.Player):
             jump_back_point = self.getTime() - self.jump_back_secs_after_pause
             Logger.info(f'Playback paused - jumping back {self.jump_back_secs_after_pause}s to: {int(jump_back_point)} seconds')
             xbmc.executebuiltin(
-                f'AlarmClock(JumpbackPaused, Seek(-{self.jump_back_secs_after_pause})), 0:{self.wait_for_jumpback}, silent)')
+                    f'AlarmClock(JumpbackPaused, Seek(-{self.jump_back_secs_after_pause}), 0:{self.wait_for_jumpback}, silent)')
 
     def onAVStarted(self):
 
@@ -250,7 +252,7 @@ class MyPlayer(xbmc.Player):
                 xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
                 pass
 
-            Logger.log(f"onPlayBackSpeedChanged with speed {speed} and resume_time {resume_time}")
+            Logger.info(f"onPlayBackSpeedChanged with speed {speed} and resume_time {resume_time}")
 
             if self.last_playback_speed < 0:
                 Logger.info('Resuming. Was rewound with speed X%d.' % (abs(self.last_playback_speed)))
@@ -289,10 +291,13 @@ class MyPlayer(xbmc.Player):
 
 class MyMonitor(xbmc.Monitor):
 
-    def __init__(self, *args, **kwargs):
-        xbmc.Monitor.__init__(self)
-        Logger.info('MyMonitor - init')
+    def __init__(self):
+        super().__init__()
+        Logger.debug('MyPlayer - init')
 
     def onSettingsChanged(self):
         global player
-        player.load_settings()
+        if player is not None:
+            player.load_settings()
+        else:
+            Logger.debug('Settings changed before player initialised; deferring.')
