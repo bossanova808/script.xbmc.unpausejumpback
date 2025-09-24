@@ -15,17 +15,15 @@ def run():
 
     Logger.start()
     try:
-        # Set up our Kodi Monitor & Player...
         kodi_monitor = MyMonitor()
         player = MyPlayer()
-
-        # Run until abort requested
         while not kodi_monitor.abortRequested():
             if kodi_monitor.waitForAbort(1):
-                # Abort was requested while waiting. We should exit
                 break
     finally:
         Logger.stop()
+        player = None
+        kodi_monitor = None
 
 
 class MyPlayer(xbmc.Player):
@@ -293,7 +291,7 @@ class MyMonitor(xbmc.Monitor):
 
     def __init__(self):
         super().__init__()
-        Logger.debug('MyPlayer - init')
+        Logger.debug('MyMonitor - init')
 
     def onSettingsChanged(self):
         global player
