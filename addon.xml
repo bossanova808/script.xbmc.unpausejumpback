@@ -25,8 +25,8 @@
     <source>https://github.com/bossanova808/script.xbmc.unpausejumpback/</source>
     <forum>https://forum.kodi.tv/showthread.php?tid=355778</forum>
     <email>bossonav808@gmail.com</email>
-    <news>v3.0.5
-- fix for more possibles instances of "Kodi is not playing any media file" when skipping beyond end of file
+    <news>v3.0.6
+- Minor updates for Piers (use new module Logger functions)
     </news>
     <assets>
       <icon>icon.png</icon>
