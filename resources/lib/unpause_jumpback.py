@@ -1,7 +1,8 @@
 import xbmc
 import time
 from bossanova808.logger import Logger
-from bossanova808.utilities import *
+from bossanova808.utilities import get_setting, get_setting_as_bool
+
 global player
 global kodi_monitor
 
@@ -11,7 +12,7 @@ def run():
     global player
     global kodi_monitor
 
-    footprints()
+    Logger.start()
 
     # Set up our Kodi Monitor & Player...
     kodi_monitor = MyMonitor()
@@ -21,7 +22,7 @@ def run():
     while not kodi_monitor.abortRequested():
         if kodi_monitor.waitForAbort(1):
             # Abort was requested while waiting. We should exit
-            footprints(False)
+            Logger.stop()
             break
 
 
