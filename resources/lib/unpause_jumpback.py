@@ -43,8 +43,8 @@ def run():
         while not kodi_monitor.abortRequested():
             if kodi_monitor.waitForAbort(1):
                 break
-    except Exception as e:
-        Logger.error(f'Unhandled exception in run(): {e}')
+    except Exception:
+        Logger.error('Unhandled exception in run()')
         raise
     finally:
         Logger.stop()
@@ -55,7 +55,7 @@ def run():
 def _get_int_setting(key: str, default: int = 0) -> int:
     try:
         return int(float(get_setting(key)))
-    except Exception:
+    except (TypeError, ValueError):
         Logger.debug(f"Invalid/missing setting '{key}', defaulting to {default}")
         return default
 
@@ -186,20 +186,15 @@ class MyPlayer(xbmc.Player):
             Logger.info("Video is playing via HTTP source, which is set as an excluded location.")
             return True
 
-        if self.excluded_path_1 and self.excluded_path_1_enabled:
-            if full_path.find(self.excluded_path_1) > -1:
-                Logger.info(f"Video is playing from '{self.excluded_path_1}', which is set as excluded path 1.")
-                return True
-
-        if self.excluded_path_2 and self.excluded_path_2_enabled:
-            if full_path.find(self.excluded_path_2) > -1:
-                Logger.info(f"Video is playing from '{self.excluded_path_2}', which is set as excluded path 2.")
-                return True
-
-        if self.excluded_path_3 and self.excluded_path_3_enabled:
-            if full_path.find(self.excluded_path_3) > -1:
-                Logger.info(f"Video is playing from '{self.excluded_path_3}', which is set as excluded path 3.")
-                return True
+        if self.excluded_path_1_enabled and self.excluded_path_1 and self.excluded_path_1 in full_path:
+            Logger.info(f"Video is playing from '{self.excluded_path_1}', which is set as excluded path 1.")
+            return True
+        if self.excluded_path_2_enabled and self.excluded_path_2 and self.excluded_path_2 in full_path:
+            Logger.info(f"Video is playing from '{self.excluded_path_2}', which is set as excluded path 2.")
+            return True
+        if self.excluded_path_3_enabled and self.excluded_path_3 and self.excluded_path_3 in full_path:
+            Logger.info(f"Video is playing from '{self.excluded_path_3}', which is set as excluded path 3.")
+            return True
 
         Logger.info(f"Not excluded: '{full_path}'")
         return False
@@ -359,6 +354,8 @@ class MyPlayer(xbmc.Player):
             speed (int): The new playback speed (1 = normal, >1 = fast-forward, 
                         <0 = rewind, 0 = paused)
         """
+        prev_speed = self.last_playback_speed
+        self.last_playback_speed = speed
         if speed == 1:  # Normal playback speed reached
             prev_speed = self.last_playback_speed
             abs_last_speed = abs(prev_speed)
@@ -401,13 +398,11 @@ class MyPlayer(xbmc.Player):
                     resume_time = max(0, min(resume_time, total - 1))
                 else:
                     resume_time = max(0, resume_time)
-            except Exception:
+            except (RuntimeError, TypeError, ValueError):
                 resume_time = max(0, resume_time)
 
             Logger.info(f'onPlayBackSpeedChanged: last_speed={prev_speed}, jump {"back" if direction == -1 else "forward"} {delta}s to {int(resume_time)}')
             self.seekTime(resume_time)
-
-        self.last_playback_speed = speed
 
 
 class MyMonitor(xbmc.Monitor):
