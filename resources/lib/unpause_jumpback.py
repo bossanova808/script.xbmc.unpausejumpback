@@ -4,11 +4,12 @@ Unpause Jumpback Add-on for Kodi
 This add-on provides functionality to automatically jump back a configurable amount 
 when resuming playback after a pause.
 
-The add-on supports multiple jumpback modes:
+The add-on supports multiple jumpback modes, with configurable timing:
+
 - Jump back on resume (default behavior)
 - Jump back on pause (for low-power systems)
 - Jump back on playback start from resume points
-- Configurable jumpback after fast-forward/rewind operations
+- Jump back after fast-forward/rewind operations
 
 """
 
@@ -59,7 +60,7 @@ class MyPlayer(xbmc.Player):
     - Jump back on resume: Seeks backward when playback resumes after pause
     - Jump back on pause: Seeks backward during the pause (for low-power systems)
     - Jump back on playback start: Seeks backward when starting from resume points
-    - Variable jumpback after fast-forward/rewind at different speeds
+    - Jump back after fast-forward/rewind at different speeds
 
     Exclusion settings allow skipping jumpback for specific content types or paths.
     """
@@ -167,11 +168,11 @@ class MyPlayer(xbmc.Player):
 
         Logger.info(f"Checking exclusion for: '{full_path}'.")
 
-        if (full_path.find("pvr://") > -1) and self.exclude_live_tv:
+        if "pvr://" in full_path and self.exclude_live_tv:
             Logger.info("Video is playing via Live TV, which is set as an excluded location.")
             return True
 
-        if ((full_path.find("http://") > -1) or (full_path.find("https://") > -1)) and self.exclude_http:
+        if ("http://" in full_path or "https://" in full_path) and self.exclude_http:
             Logger.info("Video is playing via HTTP source, which is set as an excluded location.")
             return True
 
@@ -230,12 +231,13 @@ class MyPlayer(xbmc.Player):
 
             else:
                 # Handle jump back after pause
-                if self.jump_back_secs_after_pause != 0 \
-                        and self.isPlayingVideo() \
-                        and self.getTime() > self.jump_back_secs_after_pause \
-                        and self.paused_time > 0 \
-                        and (time.time() - self.paused_time) > self.wait_for_jumpback:
-                    resume_time = self.getTime() - self.jump_back_secs_after_pause
+                current_time = self.getTime()
+                if (self.jump_back_secs_after_pause != 0
+                        and self.isPlayingVideo()
+                        and current_time > self.jump_back_secs_after_pause
+                        and self.paused_time > 0
+                        and (time.time() - self.paused_time) > self.wait_for_jumpback):
+                    resume_time = current_time - self.jump_back_secs_after_pause
                     self.seekTime(resume_time)
                     Logger.info(f'Resumed, with {int(self.jump_back_secs_after_pause)}s jump back')
 
@@ -297,7 +299,7 @@ class MyPlayer(xbmc.Player):
         Checks exclusion settings and only performs jumpback if the current
         playback position is greater than zero (indicating a resume operation).
         """
-        Logger.info(f'onAVStarted.')
+        Logger.info('onAVStarted.')
 
         # If configured to jump back when playback starts from a resume point
         if self.jump_back_on_playback_started:
@@ -356,7 +358,7 @@ class MyPlayer(xbmc.Player):
             except RuntimeError:
                 Logger.info('No file is playing, stopping UnpauseJumpBack')
                 xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
-                pass
+                return
 
             Logger.info(f"onPlayBackSpeedChanged with speed {speed} and resume_time {resume_time}")
 
@@ -423,7 +425,6 @@ class MyMonitor(xbmc.Monitor):
         This ensures that configuration changes take effect immediately without
         requiring a restart of the add-on.
         """
-        global player
         if player is not None:
             player.load_settings()
         else:
