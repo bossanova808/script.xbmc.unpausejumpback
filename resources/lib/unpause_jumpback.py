@@ -43,10 +43,21 @@ def run():
         while not kodi_monitor.abortRequested():
             if kodi_monitor.waitForAbort(1):
                 break
+    except Exception as e:
+        Logger.error(f'Unhandled exception in run(): {e}')
+        raise
     finally:
         Logger.stop()
         player = None
         kodi_monitor = None
+
+
+def _get_int_setting(key: str, default: int = 0) -> int:
+    try:
+        return int(float(get_setting(key)))
+    except Exception:
+        Logger.debug(f"Invalid/missing setting '{key}', defaulting to {default}")
+        return default
 
 
 class MyPlayer(xbmc.Player):
@@ -72,7 +83,7 @@ class MyPlayer(xbmc.Player):
         Sets up all configuration variables and loads settings from Kodi's
         add-on configuration.
         """
-        xbmc.Player.__init__(self)
+        super().__init__()
         Logger.debug('MyPlayer - init')
 
         # Jumpback behavior settings
@@ -80,7 +91,6 @@ class MyPlayer(xbmc.Player):
         self.jump_back_on_playback_started = 0
         self.paused_time = 0
         self.jump_back_secs_after_pause = 0
-        self.jump_back_secs_after_resume = 0
         self.last_playback_speed = 0
         self.wait_for_jumpback = 0
 
@@ -122,18 +132,18 @@ class MyPlayer(xbmc.Player):
         """
         self.jump_back_on_resume = get_setting_as_bool('jumpbackonresume')
         self.jump_back_on_playback_started = get_setting_as_bool('jumpbackonplaybackstarted')
-        self.jump_back_secs_after_pause = int(float(get_setting("jumpbacksecs")))
-        self.jump_back_secs_after_fwd_x2 = int(float(get_setting("jumpbacksecsfwdx2")))
-        self.jump_back_secs_after_fwd_x4 = int(float(get_setting("jumpbacksecsfwdx4")))
-        self.jump_back_secs_after_fwd_x8 = int(float(get_setting("jumpbacksecsfwdx8")))
-        self.jump_back_secs_after_fwd_x16 = int(float(get_setting("jumpbacksecsfwdx16")))
-        self.jump_back_secs_after_fwd_x32 = int(float(get_setting("jumpbacksecsfwdx32")))
-        self.jump_back_secs_after_rwd_x2 = int(float(get_setting("jumpbacksecsrwdx2")))
-        self.jump_back_secs_after_rwd_x4 = int(float(get_setting("jumpbacksecsrwdx4")))
-        self.jump_back_secs_after_rwd_x8 = int(float(get_setting("jumpbacksecsrwdx8")))
-        self.jump_back_secs_after_rwd_x16 = int(float(get_setting("jumpbacksecsrwdx16")))
-        self.jump_back_secs_after_rwd_x32 = int(float(get_setting("jumpbacksecsrwdx32")))
-        self.wait_for_jumpback = int(float(get_setting("waitforjumpback")))
+        self.jump_back_secs_after_pause = _get_int_setting("jumpbacksecs", default=0)
+        self.jump_back_secs_after_fwd_x2 = _get_int_setting("jumpbacksecsfwdx2", default=0)
+        self.jump_back_secs_after_fwd_x4 = _get_int_setting("jumpbacksecsfwdx4", default=0)
+        self.jump_back_secs_after_fwd_x8 = _get_int_setting("jumpbacksecsfwdx8", default=0)
+        self.jump_back_secs_after_fwd_x16 = _get_int_setting("jumpbacksecsfwdx16", default=0)
+        self.jump_back_secs_after_fwd_x32 = _get_int_setting("jumpbacksecsfwdx32", default=0)
+        self.jump_back_secs_after_rwd_x2 = _get_int_setting("jumpbacksecsrwdx2", default=0)
+        self.jump_back_secs_after_rwd_x4 = _get_int_setting("jumpbacksecsrwdx4", default=0)
+        self.jump_back_secs_after_rwd_x8 = _get_int_setting("jumpbacksecsrwdx8", default=0)
+        self.jump_back_secs_after_rwd_x16 = _get_int_setting("jumpbacksecsrwdx16", default=0)
+        self.jump_back_secs_after_rwd_x32 = _get_int_setting("jumpbacksecsrwdx32", default=0)
+        self.wait_for_jumpback = _get_int_setting("waitforjumpback", default=0)
         self.exclude_live_tv = get_setting_as_bool('ExcludeLiveTV')
         self.exclude_http = get_setting_as_bool('ExcludeHTTP')
         self.excluded_path_1_enabled = get_setting_as_bool('ExcludePathOption')
@@ -168,11 +178,11 @@ class MyPlayer(xbmc.Player):
 
         Logger.info(f"Checking exclusion for: '{full_path}'.")
 
-        if "pvr://" in full_path and self.exclude_live_tv:
+        if full_path.startswith("pvr://") and self.exclude_live_tv:
             Logger.info("Video is playing via Live TV, which is set as an excluded location.")
             return True
 
-        if ("http://" in full_path or "https://" in full_path) and self.exclude_http:
+        if full_path.startswith(("http://", "https://")) and self.exclude_http:
             Logger.info("Video is playing via HTTP source, which is set as an excluded location.")
             return True
 
@@ -350,50 +360,52 @@ class MyPlayer(xbmc.Player):
                         <0 = rewind, 0 = paused)
         """
         if speed == 1:  # Normal playback speed reached
-            direction = 1
-            abs_last_speed = abs(self.last_playback_speed)
-            resume_time = 0
+            prev_speed = self.last_playback_speed
+            abs_last_speed = abs(prev_speed)
+            # Only act if we actually FF/RW'd with a supported speed
+            if abs_last_speed not in (2, 4, 8, 16, 32):
+                return
             try:
-                resume_time = self.getTime()
+                current_time = self.getTime()
             except RuntimeError:
                 Logger.info('No file is playing, stopping UnpauseJumpBack')
                 xbmc.executebuiltin('CancelAlarm(JumpbackPaused, true)')
                 return
 
-            Logger.info(f"onPlayBackSpeedChanged with speed {speed} and resume_time {resume_time}")
+            direction = -1 if prev_speed > 1 else 1  # fwd => jump back; rwd => jump forward
+            if direction == -1:
+                delta_map = {
+                    2: self.jump_back_secs_after_fwd_x2,
+                    4: self.jump_back_secs_after_fwd_x4,
+                    8: self.jump_back_secs_after_fwd_x8,
+                    16: self.jump_back_secs_after_fwd_x16,
+                    32: self.jump_back_secs_after_fwd_x32,
+                }
+            else:
+                delta_map = {
+                    2: self.jump_back_secs_after_rwd_x2,
+                    4: self.jump_back_secs_after_rwd_x4,
+                    8: self.jump_back_secs_after_rwd_x8,
+                    16: self.jump_back_secs_after_rwd_x16,
+                    32: self.jump_back_secs_after_rwd_x32,
+                }
+            delta = delta_map.get(abs_last_speed, 0)
+            if not delta:
+                return
 
-            if self.last_playback_speed < 0:
-                Logger.info('Resuming. Was rewound with speed X%d.' % (abs(self.last_playback_speed)))
-            if self.last_playback_speed > 1:
-                direction = -1
-                Logger.info('Resuming. Was forwarded with speed X%d.' % (abs(self.last_playback_speed)))
+            resume_time = int(current_time + (delta * direction))
+            # Clamp within stream bounds
+            try:
+                total = int(self.getTotalTime())
+                if total > 0:
+                    resume_time = max(0, min(resume_time, total - 1))
+                else:
+                    resume_time = max(0, resume_time)
+            except Exception:
+                resume_time = max(0, resume_time)
 
-            # Handle jump after fast-forward/rewind (jump back after fwd, jump forward after rwd)
-            if direction == -1:  # Fast-forward - jump back
-                if abs_last_speed == 2:
-                    resume_time = self.getTime() + self.jump_back_secs_after_fwd_x2 * direction
-                elif abs_last_speed == 4:
-                    resume_time = self.getTime() + self.jump_back_secs_after_fwd_x4 * direction
-                elif abs_last_speed == 8:
-                    resume_time = self.getTime() + self.jump_back_secs_after_fwd_x8 * direction
-                elif abs_last_speed == 16:
-                    resume_time = self.getTime() + self.jump_back_secs_after_fwd_x16 * direction
-                elif abs_last_speed == 32:
-                    resume_time = self.getTime() + self.jump_back_secs_after_fwd_x32 * direction
-            else:  # Rewind - jump forward
-                if abs_last_speed == 2:
-                    resume_time = self.getTime() + self.jump_back_secs_after_rwd_x2 * direction
-                elif abs_last_speed == 4:
-                    resume_time = self.getTime() + self.jump_back_secs_after_rwd_x4 * direction
-                elif abs_last_speed == 8:
-                    resume_time = self.getTime() + self.jump_back_secs_after_rwd_x8 * direction
-                elif abs_last_speed == 16:
-                    resume_time = self.getTime() + self.jump_back_secs_after_rwd_x16 * direction
-                elif abs_last_speed == 32:
-                    resume_time = self.getTime() + self.jump_back_secs_after_rwd_x32 * direction
-
-            if abs_last_speed != 1:  # We actually fast-forwarded or rewound
-                self.seekTime(resume_time)  # Perform the jump
+            Logger.info(f'onPlayBackSpeedChanged: last_speed={prev_speed}, jump {"back" if direction == -1 else "forward"} {delta}s to {int(resume_time)}')
+            self.seekTime(resume_time)
 
         self.last_playback_speed = speed
 
