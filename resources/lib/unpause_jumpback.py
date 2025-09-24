@@ -43,8 +43,8 @@ def run():
         while not kodi_monitor.abortRequested():
             if kodi_monitor.waitForAbort(1):
                 break
-    except Exception:
-        Logger.error('Unhandled exception in run()')
+    except Exception as e:
+        Logger.error(f'Unhandled exception in run(): {e}')
         raise
     finally:
         Logger.stop()
@@ -87,8 +87,8 @@ class MyPlayer(xbmc.Player):
         Logger.debug('MyPlayer - init')
 
         # Jumpback behavior settings
-        self.jump_back_on_resume = 0
-        self.jump_back_on_playback_started = 0
+        self.jump_back_on_resume = False
+        self.jump_back_on_playback_started = False
         self.paused_time = 0
         self.jump_back_secs_after_pause = 0
         self.last_playback_speed = 0
@@ -158,7 +158,7 @@ class MyPlayer(xbmc.Player):
         else:
             Logger.info(f'Settings loaded, jump back set to: On Pause with a jump back of {self.jump_back_secs_after_pause} seconds')
 
-    def is_excluded(self, full_path):
+    def is_excluded(self, full_path: str) -> bool:
         """
         Check if the given file path should be excluded from jumpback functionality.
 
@@ -288,7 +288,7 @@ class MyPlayer(xbmc.Player):
             jump_back_point = self.getTime() - self.jump_back_secs_after_pause
             Logger.info(f'Playback paused - jumping back {self.jump_back_secs_after_pause}s to: {int(jump_back_point)} seconds')
             xbmc.executebuiltin(
-                    f'AlarmClock(JumpbackPaused, Seek(-{self.jump_back_secs_after_pause}), 0:{self.wait_for_jumpback}, silent)')
+                    f'AlarmClock(JumpbackPaused, Seek(-{self.jump_back_secs_after_pause}), 00:00:{int(self.wait_for_jumpback):02d}, silent), silent)')
 
     def onAVStarted(self):
         """
@@ -357,7 +357,6 @@ class MyPlayer(xbmc.Player):
         prev_speed = self.last_playback_speed
         self.last_playback_speed = speed
         if speed == 1:  # Normal playback speed reached
-            prev_speed = self.last_playback_speed
             abs_last_speed = abs(prev_speed)
             # Only act if we actually FF/RW'd with a supported speed
             if abs_last_speed not in (2, 4, 8, 16, 32):
