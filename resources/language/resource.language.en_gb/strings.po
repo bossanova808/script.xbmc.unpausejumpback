@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 msgctxt "#32000"
-msgid "Jump back on un-pause"
+msgid "Jump back on unpause"
 msgstr ""
 
 msgctxt "#32001"
@@ -103,4 +103,8 @@ msgstr ""
 
 msgctxt "#32043"
 msgid "Also jump back on playback started from resume point?"
+msgstr ""
+
+msgctxt "#32044"
+msgid "Jump back after manual seek"
 msgstr ""

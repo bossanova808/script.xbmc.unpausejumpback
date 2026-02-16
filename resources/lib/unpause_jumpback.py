@@ -94,6 +94,11 @@ class MyPlayer(xbmc.Player):
         self.last_playback_speed = 0
         self.wait_for_jumpback = 0
 
+        # Seek jumpback settings
+        self.jump_back_secs_after_seek = 0
+        self.performing_addon_seek = False
+        self.last_seek_time = 0
+
         # Fast-forward jumpback settings
         self.jump_back_secs_after_fwd_x2 = 0
         self.jump_back_secs_after_fwd_x4 = 0
@@ -143,6 +148,7 @@ class MyPlayer(xbmc.Player):
         self.jump_back_secs_after_rwd_x8 = _get_int_setting("jumpbacksecsrwdx8", default=0)
         self.jump_back_secs_after_rwd_x16 = _get_int_setting("jumpbacksecsrwdx16", default=0)
         self.jump_back_secs_after_rwd_x32 = _get_int_setting("jumpbacksecsrwdx32", default=0)
+        self.jump_back_secs_after_seek = _get_int_setting("jumpbacksecsafterseek", default=0)
         self.wait_for_jumpback = _get_int_setting("waitforjumpback", default=0)
         self.exclude_live_tv = get_setting_as_bool('ExcludeLiveTV')
         self.exclude_http = get_setting_as_bool('ExcludeHTTP')
@@ -154,9 +160,9 @@ class MyPlayer(xbmc.Player):
         self.excluded_path_3 = get_setting('ExcludePath3')
 
         if self.jump_back_on_resume:
-            Logger.info(f'Settings loaded, jump back set to: On Resume with a jump back of {self.jump_back_secs_after_pause} seconds')
+            Logger.info(f'Settings loaded, jump back mode is: On Resume, with a jump back of {self.jump_back_secs_after_pause} seconds')
         else:
-            Logger.info(f'Settings loaded, jump back set to: On Pause with a jump back of {self.jump_back_secs_after_pause} seconds')
+            Logger.info(f'Settings loaded, jump back mode is: On Pause, with a jump back of {self.jump_back_secs_after_pause} seconds')
 
     def is_excluded(self, full_path: str) -> bool:
         """
@@ -243,8 +249,12 @@ class MyPlayer(xbmc.Player):
                         and self.paused_time > 0
                         and (time.time() - self.paused_time) > self.wait_for_jumpback):
                     resume_time = current_time - self.jump_back_secs_after_pause
-                    self.seekTime(resume_time)
-                    Logger.info(f'Resumed, with {int(self.jump_back_secs_after_pause)}s jump back')
+                    self.performing_addon_seek = True
+                    try:
+                        self.seekTime(resume_time)
+                        Logger.info(f'Resumed, with {int(self.jump_back_secs_after_pause)}s jump back')
+                    finally:
+                        self.performing_addon_seek = False
 
                 self.paused_time = 0
 
@@ -335,7 +345,83 @@ class MyPlayer(xbmc.Player):
                     Logger.info(f"Resuming playback from saved time: {int(current_time)} "
                                 f"with jump back seconds: {self.jump_back_secs_after_pause}, "
                                 f"thus resume time: {int(resume_time)}")
-                    self.seekTime(resume_time)
+                    self.performing_addon_seek = True
+                    try:
+                        self.seekTime(resume_time)
+                    finally:
+                        self.performing_addon_seek = False
+
+    def onPlayBackSeek(self, seek_time, seek_offset):
+        """
+        Handle manual seek operations.
+
+        Called when the user manually seeks to a different position in the video.
+        Performs a jumpback after the seek to help the user catch context, but
+        only for user-initiated seeks to prevent infinite loops.
+
+        The addon sets a flag (performing_addon_seek) before performing its own
+        seeks to distinguish them from user-initiated seeks.
+
+        Args:
+            seek_time (int): The time in milliseconds to which playback was seeked
+            seek_offset (int): The offset in milliseconds from the current position
+        """
+        # Ignore seeks performed by this addon itself to prevent loops
+        if self.performing_addon_seek:
+            Logger.info(f'onPlayBackSeek: Ignoring addon-initiated seek to {seek_time}ms')
+            return
+
+        Logger.info(f'onPlayBackSeek: User seek detected - time: {seek_time}ms, offset: {seek_offset}ms')
+
+        # Only proceed if seek jumpback is configured
+        if self.jump_back_secs_after_seek == 0:
+            Logger.debug('Seek jumpback disabled (set to 0 seconds)')
+            return
+
+        try:
+            _filename = self.getPlayingFile()
+        except RuntimeError:
+            Logger.info('No file is playing, could not getPlayingFile(), stopping seek jumpback')
+            return
+
+        if self.is_excluded(_filename):
+            Logger.info(f"Seek jumpback ignored because '{_filename}' is in exclusion settings.")
+            return
+
+        try:
+            current_time = self.getTime()
+
+            # Don't jump back if we're near the beginning
+            if current_time <= self.jump_back_secs_after_seek:
+                Logger.info(f'Current time {current_time}s too close to start, skipping seek jumpback')
+                return
+
+            # Throttle: ignore rapid successive seeks (within 1 second)
+            current_timestamp = time.time()
+            if self.last_seek_time > 0 and (current_timestamp - self.last_seek_time) < 1.0:
+                Logger.info(f'Ignoring rapid seek (within 1 second of last seek)')
+                self.last_seek_time = current_timestamp
+                return
+
+            self.last_seek_time = current_timestamp
+
+            # Perform the jumpback
+            resume_time = current_time - self.jump_back_secs_after_seek
+            resume_time = max(0, resume_time)  # Don't go below 0
+
+            Logger.info(f'Performing seek jumpback: {self.jump_back_secs_after_seek}s back to {resume_time}s')
+
+            # Set flag before seeking to prevent loop
+            self.performing_addon_seek = True
+            try:
+                self.seekTime(resume_time)
+            finally:
+                # Always reset the flag, even if seek fails
+                self.performing_addon_seek = False
+
+        except RuntimeError as e:
+            Logger.error(f'Error during seek jumpback: {e}')
+            self.performing_addon_seek = False
 
     def onPlayBackSpeedChanged(self, speed):
         """
@@ -401,7 +487,11 @@ class MyPlayer(xbmc.Player):
                 resume_time = max(0, resume_time)
 
             Logger.info(f'onPlayBackSpeedChanged: last_speed={prev_speed}, jump {"back" if direction == -1 else "forward"} {delta}s to {int(resume_time)}')
-            self.seekTime(resume_time)
+            self.performing_addon_seek = True
+            try:
+                self.seekTime(resume_time)
+            finally:
+                self.performing_addon_seek = False
 
 
 class MyMonitor(xbmc.Monitor):
